@@ -7,8 +7,12 @@ import OverviewTab from "./components/OverviewTab";
 import MySchemesTab from "./components/MySchemesTab";
 import AiVoiceTab from "./components/AiVoiceTab";
 import TrackingTab from "./components/TrackingTab";
+import AdminTab from "./components/AdminTab";
 import { fallbackDashboard } from "./constants/fallbackData";
 import {
+  fetchAdminUsers,
+  triggerAdminCall,
+  sendAdminWhatsApp,
   createVoiceCallLog,
   fetchDashboard,
   fetchFarmers,
@@ -28,6 +32,11 @@ function App() {
   const [bootstrapped, setBootstrapped] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [adminUsers, setAdminUsers] = useState({ smartphoneUsers: [], keypadUsers: [] });
+  const [adminLoading, setAdminLoading] = useState(true);
+  const [callingUserId, setCallingUserId] = useState("");
+  const [followUpUserId, setFollowUpUserId] = useState("");
+  const [whatsappSendingUserId, setWhatsappSendingUserId] = useState("");
 
   const prioritizedSchemes = useMemo(
     () => (dashboard.prioritizedSchemes || []).slice(0, 4),
@@ -102,6 +111,54 @@ function App() {
     };
   }, [bootstrapped, selectedFarmerId]);
 
+  useEffect(() => {
+    if (!bootstrapped) return;
+    let cancelled = false;
+
+    async function loadAdminUsers() {
+      setAdminLoading(true);
+      try {
+        const data = await fetchAdminUsers();
+        if (!cancelled) {
+          setAdminUsers(data);
+        }
+      } catch (_error) {
+        if (!cancelled) {
+          setAdminUsers({
+            smartphoneUsers: [
+              {
+                _id: fallbackDashboard.farmer._id,
+                name: fallbackDashboard.farmer.name,
+                phoneNo: fallbackDashboard.farmer.phoneNo,
+                phoneType: fallbackDashboard.farmer.phoneType,
+                smartphoneProficiency: fallbackDashboard.farmer.smartphoneProficiency,
+                location: fallbackDashboard.farmer.location,
+                schemes: (fallbackDashboard.prioritizedSchemes || []).slice(0, 3),
+                callStatus: {
+                  hasBeenCalled: false,
+                  lastCallType: null,
+                  lastCallAt: null,
+                  requiresFollowUp: false,
+                  followUpAt: null,
+                },
+              },
+            ],
+            keypadUsers: [],
+          });
+        }
+      } finally {
+        if (!cancelled) {
+          setAdminLoading(false);
+        }
+      }
+    }
+
+    loadAdminUsers();
+    return () => {
+      cancelled = true;
+    };
+  }, [bootstrapped, dashboard.callLogs]);
+
   async function handleStartCall() {
     const bestScheme = prioritizedSchemes[0];
     if (!bestScheme || !dashboard?.farmer?._id) return;
@@ -135,6 +192,81 @@ function App() {
         ...previous,
         callLogs: [localLog, ...(previous.callLogs || [])],
       }));
+    }
+  }
+
+  async function handleAdminCall(user, mode = "outbound") {
+    const targetFarmerId = user._id;
+    const modeKey = mode === "follow_up" ? "follow_up" : "outbound";
+    if (!targetFarmerId) return;
+
+    if (modeKey === "follow_up") {
+      setFollowUpUserId(targetFarmerId);
+    } else {
+      setCallingUserId(targetFarmerId);
+    }
+
+    const topScheme = user.schemes?.[0];
+    const modeLabel = mode === "follow_up" ? "follow-up" : "outbound";
+    const summary =
+      mode === "follow_up"
+        ? "Follow-up call completed. Asked if farmer applied and requested application number."
+        : `AI ${modeLabel} call completed. Explained ${
+            topScheme?.title || "eligible schemes"
+          }, benefits, deadlines, and required documents.`;
+
+    try {
+      await triggerAdminCall({ farmerId: targetFarmerId, type: modeKey });
+    } catch (_error) {
+      // Ignore in UI-only fallback mode.
+    } finally {
+      try {
+        const refreshed = await fetchAdminUsers();
+        setAdminUsers(refreshed);
+      } catch (_refreshError) {
+        setAdminUsers((previous) => {
+          const updatedKeypad = (previous.keypadUsers || []).map((item) => {
+            if (item._id !== targetFarmerId) return item;
+            return {
+              ...item,
+              callStatus: {
+                hasBeenCalled: true,
+                lastCallType: mode,
+                lastCallAt: new Date().toISOString(),
+                requiresFollowUp: mode === "outbound",
+                followUpAt:
+                  mode === "outbound"
+                    ? new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString()
+                    : item.callStatus?.followUpAt || null,
+              },
+            };
+          });
+          return {
+            ...previous,
+            keypadUsers: updatedKeypad,
+          };
+        });
+      }
+      setCallingUserId((current) => (current === targetFarmerId ? "" : current));
+      setFollowUpUserId((current) => (current === targetFarmerId ? "" : current));
+    }
+  }
+
+  async function handleAdminWhatsApp(user, fallbackUrlFromUi = "") {
+    if (!user?._id) return;
+    setWhatsappSendingUserId(user._id);
+    try {
+      const response = await sendAdminWhatsapp({ farmerId: user._id });
+      const targetUrl = response?.waUrl || fallbackUrlFromUi;
+      if (targetUrl) {
+        window.open(targetUrl, "_blank", "noopener,noreferrer");
+      }
+    } catch (_error) {
+      if (fallbackUrlFromUi) {
+        window.open(fallbackUrlFromUi, "_blank", "noopener,noreferrer");
+      }
+    } finally {
+      setWhatsappSendingUserId((current) => (current === user._id ? "" : current));
     }
   }
 
@@ -173,6 +305,19 @@ function App() {
 
           {!loading && activeTab === "tracking" ? (
             <TrackingTab applications={dashboard.applications || []} />
+          ) : null}
+
+          {activeTab === "admin" ? (
+            <AdminTab
+              data={adminUsers}
+              loading={adminLoading}
+              onStartAiCall={(user) => handleAdminCall(user, "outbound")}
+              onFollowUpCall={(user) => handleAdminCall(user, "follow_up")}
+              callLoadingUserId={callingUserId}
+              followUpLoadingUserId={followUpUserId}
+              onWhatsApp={handleAdminWhatsApp}
+              whatsappLoadingUserId={whatsappSendingUserId}
+            />
           ) : null}
         </section>
       </main>

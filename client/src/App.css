@@ -186,6 +186,146 @@
   color: #fff;
 }
 
+.admin-top-grid {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.admin-metric {
+  border: 1px solid #e2e8e3;
+  border-radius: 14px;
+  background: #f6fbf7;
+  padding: 14px;
+}
+
+.admin-metric h3 {
+  margin: 0;
+  font-size: 30px;
+  color: #0f9445;
+}
+
+.admin-metric p {
+  margin: 4px 0 0;
+  color: #4f6057;
+  font-weight: 700;
+}
+
+.admin-columns {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.admin-column {
+  border: 1px solid #e2e9e4;
+  border-radius: 14px;
+  padding: 12px;
+  background: #fff;
+}
+
+.admin-column-head {
+  font-size: 17px;
+  font-weight: 700;
+  color: #173225;
+}
+
+.admin-user-list {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-user-card {
+  border: 1px solid #e6ece7;
+  border-radius: 12px;
+  padding: 12px;
+  background: #fbfdfb;
+}
+
+.admin-user-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.admin-user-head h4 {
+  margin: 0;
+  color: #173225;
+  font-size: 17px;
+}
+
+.admin-user-head p {
+  margin: 3px 0 0;
+  color: #56685f;
+  font-size: 13px;
+}
+
+.admin-user-badge {
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 10px;
+}
+
+.admin-user-badge.keypad {
+  background: #fff3de;
+  color: #8f5c0a;
+}
+
+.admin-user-badge.smartphone {
+  background: #e7f3ff;
+  color: #285b9c;
+}
+
+.admin-scheme-list {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-scheme-item {
+  border: 1px solid #e7ece8;
+  border-radius: 10px;
+  background: #fff;
+  padding: 8px 10px;
+}
+
+.admin-scheme-item strong {
+  display: block;
+  color: #1c2e24;
+  font-size: 13px;
+}
+
+.admin-scheme-item span {
+  color: #4d6055;
+  font-size: 12px;
+}
+
+.admin-call-status {
+  margin-top: 10px;
+  color: #4d6055;
+  font-size: 12px;
+}
+
+.admin-actions {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.btn-whatsapp {
+  background: #25d366;
+  color: #fff;
+  border: 1px solid #1cb95a;
+}
+
 .error-banner {
   margin: 14px 0 0;
   background: #fff6d8;
@@ -624,5 +764,10 @@
 
   .timeline {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .admin-columns,
+  .admin-top-grid {
+    grid-template-columns: 1fr;
   }
 }
