@@ -3,6 +3,7 @@ const tabs = [
   { key: "schemes", label: "My Schemes" },
   { key: "voice", label: "AI Voice" },
   { key: "tracking", label: "Tracking" },
+  { key: "admin", label: "Admin" },
 ];
 
 function Tabs({ activeTab, setActiveTab }) {
