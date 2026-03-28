@@ -256,7 +256,7 @@ function App() {
     if (!user?._id) return;
     setWhatsappSendingUserId(user._id);
     try {
-      const response = await sendAdminWhatsapp({ farmerId: user._id });
+      const response = await sendAdminWhatsApp(user._id);
       const targetUrl = response?.waUrl || fallbackUrlFromUi;
       if (targetUrl) {
         window.open(targetUrl, "_blank", "noopener,noreferrer");
